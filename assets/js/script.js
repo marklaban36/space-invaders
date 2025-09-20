@@ -2,6 +2,7 @@ let gameArea = document.getElementById("game-area");
 let statusText = document.getElementById("status");
 let player, invaders = [], bullets = [], score = 0;
 let gameInterval, invaderDirection = 1;
+let invaderDropSpeed = 10; // descent speed in pixels
 
 function startGame() {
   gameArea.innerHTML = "";
@@ -74,7 +75,7 @@ function gameLoop() {
   if (edgeReached) {
     invaderDirection *= -1;
     invaders.forEach(inv => {
-      inv.style.top = `${parseInt(inv.style.top) + 2}px`;
+      inv.style.top = `${parseInt(inv.style.top) + invaderDropSpeed}px`;
       if (parseInt(inv.style.top) > 350) endGame("Game Over!");
     });
   }
@@ -83,9 +84,13 @@ function gameLoop() {
   bullets.forEach((bullet, bi) => {
     let bLeft = parseInt(bullet.style.left);
     let bBottom = parseInt(bullet.style.bottom);
+
     invaders.forEach((inv, ii) => {
+      if (!inv) return; // skip removed invaders
+
       let iLeft = parseInt(inv.style.left);
       let iTop = parseInt(inv.style.top);
+
       if (
         bLeft > iLeft &&
         bLeft < iLeft + 30 &&
@@ -93,14 +98,19 @@ function gameLoop() {
         400 - bBottom < iTop + 20
       ) {
         bullet.remove();
-        inv.remove();
         bullets.splice(bi, 1);
-        invaders.splice(ii, 1);
+
+        inv.remove();
+        invaders[ii] = null; // mark for cleanup
+
         score += 10;
         statusText.textContent = `Score: ${score}`;
       }
     });
   });
+
+  // Clean up null invaders
+  invaders = invaders.filter(inv => inv !== null);
 
   if (invaders.length === 0) endGame("You Win!");
 }
