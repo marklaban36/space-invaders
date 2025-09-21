@@ -33,35 +33,40 @@ const LEVELS = {
     enemySpeed: 1,
     enemyLaserSpeed: 2,
     enemyFireRate: 500,  // Higher number = less frequent shooting
-    enemySize: 50
+    enemySize: 50,
+    enemyImage: "assets/images/ufo.png"  // Level 1 enemy
   },
   2: {
     enemyCount: 20,
     enemySpeed: 1.5,
     enemyLaserSpeed: 2.5,
     enemyFireRate: 400,  // Slightly more frequent than level 1
-    enemySize: 45
+    enemySize: 45,
+    enemyImage: "assets/images/alien5.png"  // Level 2 enemy (you'll need to add this image)
   },
   3: {
     enemyCount: 24,
     enemySpeed: 2,
     enemyLaserSpeed: 3,
     enemyFireRate: 300,  // More frequent shooting
-    enemySize: 40
+    enemySize: 40,
+    enemyImage: "assets/images/alien3.png"  // Level 3 enemy (you'll need to add this image)
   },
   4: {
     enemyCount: 28,
     enemySpeed: 2.5,
     enemyLaserSpeed: 3.5,
     enemyFireRate: 200,  // Even more frequent
-    enemySize: 35
+    enemySize: 35,
+    enemyImage: "assets/images/alien4.png"  // Level 4 enemy (you'll need to add this image)
   },
   5: {
     enemyCount: 32,
     enemySpeed: 3,
     enemyLaserSpeed: 4,
     enemyFireRate: 100,   // Most frequent shooting
-    enemySize: 30
+    enemySize: 30,
+    enemyImage: "assets/images/alien2.png"  // Level 5 enemy (you'll need to add this image)
   }
 }
 
@@ -102,7 +107,7 @@ function collideRect(rect1, rect2){
 function createEnemy($container, x, y){
   const level = getCurrentLevel();
   const $enemy = document.createElement("img");
-  $enemy.src = "assets/images/ufo.png";
+  $enemy.src = level.enemyImage;  // Use the level-specific enemy image
   $enemy.className = "enemy";
   $container.appendChild($enemy);
   // Start with random cooldown so enemies don't all shoot at once
