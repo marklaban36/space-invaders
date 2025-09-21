@@ -23,55 +23,77 @@ const STATE = {
   enemy_cooldown : 0,
   gameOver: false,
   currentLevel: 1,
-  levelComplete: false
+  levelComplete: false,
+  bossLevel: false,
+  bossWave: 1,
+  bossComplete: false
 }
 
 // Level configurations
 const LEVELS = {
   1: {
-    enemyCount: 16,
+    enemyCount: 5,
     enemySpeed: 1,
     enemyLaserSpeed: 2,
-    enemyFireRate: 500,  // Higher number = less frequent shooting
+    enemyFireRate: 500,
     enemySize: 50,
-    enemyImage: "assets/images/ufo.png"  // Level 1 enemy
+    enemyImage: "assets/images/ufo.png"
   },
   2: {
-    enemyCount: 20,
+    enemyCount: 5,
     enemySpeed: 1.5,
     enemyLaserSpeed: 2.5,
-    enemyFireRate: 400,  // Slightly more frequent than level 1
+    enemyFireRate: 400,
     enemySize: 45,
-    enemyImage: "assets/images/alien5.png"  // Level 2 enemy (you'll need to add this image)
+    enemyImage: "assets/images/alien5.png"
   },
   3: {
-    enemyCount: 24,
+    enemyCount: 5,
     enemySpeed: 2,
     enemyLaserSpeed: 3,
-    enemyFireRate: 300,  // More frequent shooting
+    enemyFireRate: 300,
     enemySize: 40,
-    enemyImage: "assets/images/alien3.png"  // Level 3 enemy (you'll need to add this image)
+    enemyImage: "assets/images/alien3.png"
   },
   4: {
-    enemyCount: 28,
+    enemyCount: 5,
     enemySpeed: 2.5,
     enemyLaserSpeed: 3.5,
-    enemyFireRate: 200,  // Even more frequent
+    enemyFireRate: 200,
     enemySize: 35,
-    enemyImage: "assets/images/alien4.png"  // Level 4 enemy (you'll need to add this image)
+    enemyImage: "assets/images/alien4.png"
   },
   5: {
-    enemyCount: 32,
+    enemyCount: 5,
     enemySpeed: 3,
     enemyLaserSpeed: 4,
-    enemyFireRate: 100,   // Most frequent shooting
+    enemyFireRate: 100,
     enemySize: 30,
-    enemyImage: "assets/images/alien2.png"  // Level 5 enemy (you'll need to add this image)
+    enemyImage: "assets/images/alien2.png"
+  },
+  boss: {
+    enemySpeed: 2,
+    enemyLaserSpeed: 3,
+    enemyFireRate: 5000,
+    waves: [
+      { enemyCount: 5, enemySize: 60, enemyHealth: 5, enemyImage: "assets/images/alien4.png" },
+      { enemyCount: 7, enemySize: 55, enemyHealth: 5, enemyImage: "assets/images/alien2.png" },
+      { enemyCount: 9, enemySize: 50, enemyHealth: 5, enemyImage: "assets/images/alien3.png" }
+    ],
+    finalBoss: {
+      enemySize: 120,
+      enemyHealth: 15,
+      enemySpeed: 4,
+      enemyImage: "assets/images/alien1.png"
+    }
   }
 }
 
 function getCurrentLevel() {
-  return LEVELS[STATE.currentLevel] || LEVELS[5]; // Default to level 5 if beyond defined levels
+  if (STATE.bossLevel) {
+    return LEVELS.boss;
+  }
+  return LEVELS[STATE.currentLevel] || LEVELS[5];
 }
 
 // General purpose functions
@@ -104,40 +126,115 @@ function collideRect(rect1, rect2){
 }
 
 // Enemy 
-function createEnemy($container, x, y){
+function createEnemy($container, x, y, health = 1, isFinalBoss = false){
   const level = getCurrentLevel();
   const $enemy = document.createElement("img");
-  $enemy.src = level.enemyImage;  // Use the level-specific enemy image
+  
+  if (STATE.bossLevel && STATE.bossWave === 4) {
+    // Final boss
+    $enemy.src = level.finalBoss.enemyImage;
+    setSize($enemy, level.finalBoss.enemySize);
+  } else if (STATE.bossLevel) {
+    // Boss wave enemies
+    const currentWave = level.waves[STATE.bossWave - 1];
+    $enemy.src = currentWave.enemyImage;
+    setSize($enemy, currentWave.enemySize);
+  } else {
+    // Regular level enemies
+    $enemy.src = level.enemyImage;
+    setSize($enemy, level.enemySize);
+  }
+  
   $enemy.className = "enemy";
   $container.appendChild($enemy);
-  // Start with random cooldown so enemies don't all shoot at once
+  
   const enemy_cooldown = Math.floor(Math.random() * level.enemyFireRate);
-  const enemy = {x, y, $enemy, enemy_cooldown}
+  const enemy = {
+    x, 
+    y, 
+    $enemy, 
+    enemy_cooldown, 
+    health: health, 
+    maxHealth: health,
+    isFinalBoss: isFinalBoss
+  };
+  
   STATE.enemies.push(enemy);
-  setSize($enemy, level.enemySize);
-  setPosition($enemy, x, y)
+  setPosition($enemy, x, y);
+  
+  // Add health indicator for enemies with more than 1 health
+  if (health > 1) {
+    createHealthBar($container, enemy);
+  }
+}
+
+function createHealthBar($container, enemy) {
+  const $healthBar = document.createElement("div");
+  $healthBar.className = "health-bar";
+  $healthBar.style.position = "absolute";
+  $healthBar.style.width = "40px";
+  $healthBar.style.height = "4px";
+  $healthBar.style.backgroundColor = "red";
+  $healthBar.style.border = "1px solid white";
+  $container.appendChild($healthBar);
+  
+  const $healthFill = document.createElement("div");
+  $healthFill.className = "health-fill";
+  $healthFill.style.width = "100%";
+  $healthFill.style.height = "100%";
+  $healthFill.style.backgroundColor = "green";
+  $healthBar.appendChild($healthFill);
+  
+  enemy.$healthBar = $healthBar;
+  enemy.$healthFill = $healthFill;
+  updateHealthBar(enemy);
+}
+
+function updateHealthBar(enemy) {
+  if (enemy.$healthBar && enemy.$healthFill) {
+    const healthPercent = (enemy.health / enemy.maxHealth) * 100;
+    enemy.$healthFill.style.width = `${healthPercent}%`;
+    
+    // Position health bar above enemy
+    const enemyRect = enemy.$enemy.getBoundingClientRect();
+    const containerRect = document.querySelector(".main").getBoundingClientRect();
+    setPosition(enemy.$healthBar, enemy.x - 20, enemy.y - 15);
+  }
 }
 
 function updateEnemies($container){
   const level = getCurrentLevel();
-  const dx = Math.sin(Date.now()/1000)*40;
-  const dy = Math.cos(Date.now()/1000)*30;
   const enemies = STATE.enemies;
+  
   for (let i = 0; i < enemies.length; i++){
     const enemy = enemies[i];
-    var a = enemy.x + dx * level.enemySpeed;
-    var b = enemy.y + dy * level.enemySpeed;
-    setPosition(enemy.$enemy, a, b);
+    let dx, dy;
     
-    // Only shoot if cooldown reaches 0
+    if (enemy.isFinalBoss) {
+      // Final boss movement - faster and more aggressive
+      dx = Math.sin(Date.now()/500) * 60;
+      dy = Math.cos(Date.now()/800) * 40;
+    } else {
+      // Regular enemy movement
+      dx = Math.sin(Date.now()/1000) * 40;
+      dy = Math.cos(Date.now()/1000) * 30;
+    }
+    
+    const speed = enemy.isFinalBoss ? level.finalBoss.enemySpeed : level.enemySpeed;
+    const a = enemy.x + dx * speed;
+    const b = enemy.y + dy * speed;
+    
+    setPosition(enemy.$enemy, a, b);
+    updateHealthBar(enemy);
+    
+    // Enemy shooting
     if (enemy.enemy_cooldown <= 0){
-      // Add random chance to make shooting less predictable
-      if (Math.random() < 0.3) {  // 30% chance to shoot when cooldown is ready
+      if (Math.random() < 0.3) {
         createEnemyLaser($container, a, b);
         enemy.enemy_cooldown = Math.floor(Math.random() * level.enemyFireRate) + level.enemyFireRate/2;
       }
     }
-    enemy.enemy_cooldown -= 1;  // Decrease cooldown each frame
+    enemy.enemy_cooldown -= 1;
   }
 }
 
@@ -196,9 +293,21 @@ function updateLaser($container){
       const enemy_rectangle = enemy.$enemy.getBoundingClientRect();
       if(collideRect(enemy_rectangle, laser_rectangle)){
         deleteLaser(lasers, laser, laser.$laser);
-        const index = enemies.indexOf(enemy);
-        enemies.splice(index,1);
-        $container.removeChild(enemy.$enemy);
+        
+        // Damage enemy
+        enemy.health--;
+        updateHealthBar(enemy);
+        
+        // Remove enemy if health reaches 0
+        if (enemy.health <= 0) {
+          const index = enemies.indexOf(enemy);
+          enemies.splice(index, 1);
+          $container.removeChild(enemy.$enemy);
+          if (enemy.$healthBar) {
+            $container.removeChild(enemy.$healthBar);
+          }
+        }
+        break;
       }
     }
   }
@@ -261,6 +370,73 @@ function KeyRelease(event) {
   }
 }
 
+// Boss Level Functions
+function startBossLevel() {
+  STATE.bossLevel = true;
+  STATE.bossWave = 1;
+  STATE.levelComplete = false;
+  createBossWave($container);
+  updateLevelDisplay();
+}
+
+function createBossWave($container) {
+  const level = getCurrentLevel();
+  
+  if (STATE.bossWave === 4) {
+    // Final boss
+    const finalBoss = level.finalBoss;
+    const x = GAME_WIDTH / 2 - finalBoss.enemySize / 2;
+    const y = 100;
+    createEnemy($container, x, y, finalBoss.enemyHealth, true);
+  } else {
+    // Regular boss waves
+    const currentWave = level.waves[STATE.bossWave - 1];
+    const enemiesPerRow = Math.ceil(Math.sqrt(currentWave.enemyCount));
+    const spacing = GAME_WIDTH / (enemiesPerRow + 1);
+    
+    for(let i = 0; i < currentWave.enemyCount; i++){
+      const row = Math.floor(i / enemiesPerRow);
+      const col = i % enemiesPerRow;
+      const x = (col + 1) * spacing - currentWave.enemySize/2;
+      const y = 100 + row * 80;
+      createEnemy($container, x, y, currentWave.enemyHealth);
+    }
+  }
+}
+
+function nextBossWave() {
+  // Clear existing enemies and lasers
+  STATE.enemies.forEach(enemy => {
+    $container.removeChild(enemy.$enemy);
+    if (enemy.$healthBar) {
+      $container.removeChild(enemy.$healthBar);
+    }
+  });
+  STATE.enemies = [];
+  
+  STATE.enemyLasers.forEach(laser => {
+    $container.removeChild(laser.$enemyLaser);
+  });
+  STATE.enemyLasers = [];
+  
+  STATE.bossWave++;
+  STATE.levelComplete = false; // Reset level complete flag
+  
+  if (STATE.bossWave <= 3) {
+    // Waves 1, 2, and 3
+    createBossWave($container);
+    updateLevelDisplay();
+  } else if (STATE.bossWave === 4) {
+    // Final boss wave
+    createBossWave($container);
+    updateLevelDisplay();
+  } else {
+    // Boss level complete (after final boss is defeated)
+    STATE.bossComplete = true;
+    document.querySelector(".boss-complete").style.display = "block";
+  }
+}
+
 // Main Update Function
 function update(){
   updatePlayer();
@@ -272,12 +448,22 @@ function update(){
   
   if (STATE.gameOver) {
     document.querySelector(".lose").style.display = "block";
-  } else if (STATE.enemies.length == 0 && !STATE.levelComplete) {
+  } else if (STATE.enemies.length == 0 && !STATE.levelComplete && !STATE.bossComplete) {
     STATE.levelComplete = true;
-    if (STATE.currentLevel < 5) {
+    
+    if (STATE.bossLevel && STATE.bossWave < 4) {
+      // Next boss wave (waves 1, 2, 3)
+      document.querySelector(".next-wave").style.display = "block";
+    } else if (STATE.bossLevel && STATE.bossWave === 4) {
+      // Final boss defeated
+      STATE.bossComplete = true;
+      document.querySelector(".boss-complete").style.display = "block";
+    } else if (STATE.currentLevel < 5) {
+      // Next regular level
       document.querySelector(".next-level").style.display = "block";
     } else {
-      document.querySelector(".win").style.display = "block";
+      // Start boss level
+      document.querySelector(".boss-level").style.display = "block";
     }
   }
 }
@@ -307,7 +493,15 @@ function nextLevel() {
 function updateLevelDisplay() {
   const levelDisplay = document.querySelector(".level-display");
   if (levelDisplay) {
-    levelDisplay.textContent = `Level: ${STATE.currentLevel}`;
+    if (STATE.bossLevel) {
+      if (STATE.bossWave === 4) {
+        levelDisplay.textContent = `BOSS LEVEL - Final Boss`;
+      } else {
+        levelDisplay.textContent = `BOSS LEVEL - Wave ${STATE.bossWave}`;
+      }
+    } else {
+      levelDisplay.textContent = `Level: ${STATE.currentLevel}`;
+    }
   }
 }
 

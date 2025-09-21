@@ -32,6 +32,21 @@
                     <h2>Ready for the next challenge?</h2>
                     <button class="btn" onclick="nextLevel(); this.parentElement.style.display='none'">Next Level</button>
                 </div>
+                <div class="boss-level">
+                    <h1>PREPARE FOR BOSS BATTLE!</h1>
+                    <h2>Face the ultimate challenge!</h2>
+                    <button class="btn" onclick="startBossLevel(); this.parentElement.style.display='none'">Start Boss Level</button>
+                </div>
+                <div class="next-wave">
+                    <h1>WAVE COMPLETE!</h1>
+                    <h2>Get ready for the next wave!</h2>
+                    <button class="btn" onclick="nextBossWave(); this.parentElement.style.display='none'">Next Wave</button>
+                </div>
+                <div class="boss-complete">
+                    <h1>BOSS DEFEATED!</h1>
+                    <h2>Congratulations! You are the ultimate space defender!</h2>
+                    <button class="btn" onclick="window.location.reload()">Play Again</button>
+                </div>
         </div>
         <script src="assets/js/script.js"></script>
         <footer></footer>
@@ -46,7 +61,7 @@
   color: #fff;
 }
 
-.next-level {
+.next-level, .boss-level, .next-wave, .boss-complete {
   display: none;
   position: absolute;
   background: #4CAF50;
@@ -62,6 +77,18 @@
   z-index: 10;
 }
 
+.boss-level {
+  background: #FF6B35;
+}
+
+.next-wave {
+  background: #9B59B6;
+}
+
+.boss-complete {
+  background: #F39C12;
+}
+
 .btn {
   background: #fff;
   color: #333;
@@ -75,6 +102,11 @@
 
 .btn:hover {
   background: #f0f0f0;
+}
+
+.health-bar {
+  border-radius: 2px;
+  z-index: 5;
 }
 
 @keyframes pop-in {
