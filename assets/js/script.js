@@ -375,6 +375,22 @@ function startBossLevel() {
   STATE.bossLevel = true;
   STATE.bossWave = 1;
   STATE.levelComplete = false;
+  
+  // Clear any existing enemies first
+  STATE.enemies.forEach(enemy => {
+    $container.removeChild(enemy.$enemy);
+    if (enemy.$healthBar) {
+      $container.removeChild(enemy.$healthBar);
+    }
+  });
+  STATE.enemies = [];
+  
+  STATE.enemyLasers.forEach(laser => {
+    $container.removeChild(laser.$enemyLaser);
+  });
+  STATE.enemyLasers = [];
+  
+  // Now create the first boss wave
   createBossWave($container);
   updateLevelDisplay();
 }
@@ -475,6 +491,9 @@ function nextLevel() {
   // Clear existing enemies and lasers
   STATE.enemies.forEach(enemy => {
     $container.removeChild(enemy.$enemy);
+    if (enemy.$healthBar) {
+      $container.removeChild(enemy.$healthBar);
+    }
   });
   STATE.enemies = [];
   
@@ -483,8 +502,10 @@ function nextLevel() {
   });
   STATE.enemyLasers = [];
   
-  // Create new enemies for the next level
-  createEnemies($container);
+  // Only create enemies if we're not in boss level
+  if (!STATE.bossLevel) {
+    createEnemies($container);
+  }
   
   // Update level display
   updateLevelDisplay();
@@ -506,6 +527,11 @@ function updateLevelDisplay() {
 }
 
 function createEnemies($container) {
+  // Only use this function for regular levels, not boss levels
+  if (STATE.bossLevel) {
+    return; // Don't create regular enemies during boss level
+  }
+  
   const level = getCurrentLevel();
   STATE.number_of_enemies = level.enemyCount;
   
